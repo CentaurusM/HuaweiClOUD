@@ -1,0 +1,19 @@
+
+export OS_USERNAME="your_huaweicloud_username" 
+export OS_PASSWORD="your_password"
+
+# Change for a different region 
+export OS_PROJECT_NAME=cn-south-1
+
+export OS_USER_DOMAIN_NAME=$OS_USERNAME
+#export OS_DOMAIN_NAME=$OS_USERNAME
+export OS_AUTH_URL="https://iam.$OS_PROJECT_NAME.myhwclouds.com:443/v3" 
+export OS_INTERFACE=public
+
+# No changes needed beyond this point 
+export NOVA_ENDPOINT_TYPE=publicURL 
+export OS_ENDPOINT_TYPE=publicURL 
+export CINDER_ENDPOINT_TYPE=publicURL 
+export OS_VOLUME_API_VERSION=2 
+export OS_IDENTITY_API_VERSION=3 
+export OS_IMAGE_API_VERSION=2
