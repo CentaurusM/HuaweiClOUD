@@ -1,15 +1,15 @@
 
-# Using HuaweiCloud API
-## Import enviroment
+## Using HuaweiCloud API
+### Import enviroment
 ```
 source hec.rc
 ```
-## Example: Creat a VM via HuaweiCloud API
+### Example: Creat a VM via HuaweiCloud API
 ``` 
 sh vm_create.sh 
 ```
 
-### Examples of request body
+#### Examples of request body
 
 1. Example 1: creat a linux VM by using "user_data" to inject root password 
 ```
@@ -113,23 +113,23 @@ sh vm_create.sh
 }
 ```
 
-# Using openstack-client to manage your HuaweiCLOUD resources 
-## Install
+## Using openstack-client to manage your HuaweiCLOUD resources 
+### Install
 ``` 
 apt-get install python-pip
 pip install python-openstackclient
 ```
-## Import env
+### Import env
 ``` 
 source hec.rc
 ```
 
-## test
+### test
 ``` 
 openstack server list
 ```
 
-# Developers
+## Developers
 [1] <https://developer.huaweicloud.com/>
 
 
