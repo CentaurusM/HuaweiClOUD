@@ -106,7 +106,7 @@ sh vm_create.sh
     },
     "metadata": {
       "op_svc_userid": "d2954c70ef054b7bba0e2eb0c601d723",
-      "admin_pass": "Huawei@123$"
+      "admin_pass": "your-password"
     },
     "tags": []
   }
