@@ -129,6 +129,20 @@ source hec.rc
 openstack server list
 ```
 
+## Use s3cmd to manager your Object Storage Service of HuaweiCLOUD
+### Install
+```
+apt-get install s3cmd
+```
+### Setup
+```
+mv .s3cfg /root/
+
+# change AK/SK values obtained from your HuaweiCloud
+# Adjust other parameters as your need
+```
+
+
 ## Developers
 [1] <https://developer.huaweicloud.com/>
 
