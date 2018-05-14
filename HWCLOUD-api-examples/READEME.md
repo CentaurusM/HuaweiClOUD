@@ -143,7 +143,7 @@ mv .s3cfg /root/
 ```
 
 
-## Developers
+## References
 [1] <https://developer.huaweicloud.com/>
 
 
