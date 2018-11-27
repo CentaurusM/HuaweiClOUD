@@ -42,7 +42,7 @@ class HTTPClient(object):
         resp_body = json.loads(resp.text)
         return resp_headers, resp_body
 
-    @staticmethod:
+    @staticmethod
     def do_post(url, headers, body):
         headers.update(HTTPClient.general_headers)
         resp = requests.post(url, headers=headers, data=json.dumps(body), proxies=HTTPClient.proxies, verify=False)
