@@ -114,7 +114,7 @@ class CloudClient(object):
         if not self.catalog:
             return None
         for cat in self.catalog:
-            print(self.catalog)
+            # print(self.catalog)
             if cat.get('name') == service_name and cat.get('type') == service_type:
                 for endpoint in cat.get("endpoints"):
                     if endpoint.get('interface') == endpoint_type and endpoint.get('region') == region_name:
@@ -341,7 +341,7 @@ class CloudMonitor(object):
         #self.client.get_all_regions()
         servers =  self.client.list_servers(region_name, detailed=True)
         for server in servers:
-            print server.get('name')
+            # print server.get('name')
             if not self._auth_users(server.get('name')):
                 #res = self.client.delete_server(region_name, server.get('id'))
                 print("server: %s is invailed and has been deleted" % server.get('name'))
