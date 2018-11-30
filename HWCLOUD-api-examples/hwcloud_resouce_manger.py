@@ -345,9 +345,9 @@ class CloudMonitor(object):
         servers =  self.client.list_servers(region_name, detailed=True)
         for server in servers:
             # print server.get('name')
-            if not self._auth_users(server.get('name')):
-                #res = self.client.delete_server(region_name, server.get('id'))
+            if not self._auth_users(server.get('name')): 
                 print("%s: server: %s is invailed and has been deleted" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), server.get('name')))
+                res = self.client.delete_server(region_name, server.get('id'))
                 pass
 
     def bandwidths_monitor(self, region_name):
@@ -387,6 +387,7 @@ def job():
     print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
+print("%s Start moinitoring..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 sched = BlockingScheduler()
 sched.add_job(monitor_job, 'interval', seconds=120)
 sched.start()
