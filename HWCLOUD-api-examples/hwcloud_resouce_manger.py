@@ -334,7 +334,7 @@ class CloudMonitor(object):
 
 
     def _auth_users(self, server_name):
-        print any(self.users.has_key(item) for item in server_name.lower().split("-"))
+        return any(self.users.has_key(item) for item in server_name.lower().split("-"))
 
 
     def servers_monitor(self, region_name):
