@@ -328,7 +328,9 @@ class CloudMonitor(object):
                       'l00213780':'lijuan',
                       't00357535':'tianxinghui',
                       'z00393177':'zhangjihai',
-                      'wwx493768':'wanglijuan'}
+                      'wwx493768':'wanglijuan',
+                      'z00205886':'zhuziguang',
+                      'l00349281':'l00349281'}
 
 
     def _auth_users(self, server_name):
@@ -336,14 +338,13 @@ class CloudMonitor(object):
 
 
     def servers_monitor(self, region_name):
-
-        self.client.get_all_regions()
-
+        #self.client.get_all_regions()
         servers =  self.client.list_servers(region_name, detailed=True)
         for server in servers:
             print server.get('name')
             if not self._auth_users(server.get('name')):
                 #res = self.client.delete_server(region_name, server.get('id'))
+                print("server: %s is invailed and has been deleted" % server.get('name'))
                 pass
 
     def bandwidths_monitor(self, region_name):
@@ -368,14 +369,13 @@ class CloudMonitor(object):
 if __name__ == '__main__':
     c = CloudMonitor()
 
-
    # regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
     regions = ['cn-north-1']
     for region in regions:
         print "region:", region
         c.servers_monitor(region)
-        c.bandwidths_monitor(region)
-        c.volumes_monitor(region)
+        #c.bandwidths_monitor(region)
+        #c.volumes_monitor(region)
 
     #print(c.auth_token)
 
