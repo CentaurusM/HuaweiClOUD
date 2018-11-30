@@ -5,6 +5,9 @@ import six
 from oslo_config import cfg
 from six.moves.urllib import parse
 
+from apscheduler.schedulers.blocking import BlockingScheduler
+from datetime import datetime
+
 keystone_authtoken_opts = [
     cfg.StrOpt("project_name"),
     cfg.StrOpt("user"),
@@ -344,7 +347,7 @@ class CloudMonitor(object):
             # print server.get('name')
             if not self._auth_users(server.get('name')):
                 #res = self.client.delete_server(region_name, server.get('id'))
-                print("server: %s is invailed and has been deleted" % server.get('name'))
+                print("%s: server: %s is invailed and has been deleted" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), server.get('name')))
                 pass
 
     def bandwidths_monitor(self, region_name):
@@ -366,9 +369,9 @@ class CloudMonitor(object):
         pass
 
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
+def monitor_job(): 
     c = CloudMonitor()
-
    # regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
     regions = ['cn-north-1']
     for region in regions:
@@ -380,7 +383,13 @@ if __name__ == '__main__':
     #print(c.auth_token)
 
 
+def job():
+    print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
+
+sched = BlockingScheduler()
+sched.add_job(monitor_job, 'interval', seconds=120)
+sched.start()
 
 
 
