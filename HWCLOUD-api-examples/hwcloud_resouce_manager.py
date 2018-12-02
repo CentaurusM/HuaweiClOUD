@@ -34,7 +34,6 @@ class HTTPClient(object):
         "user_agent": "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)",
         'Content-Type': 'application/json'
     }
-
     proxies = {}
 
     @staticmethod
@@ -61,47 +60,49 @@ class HTTPClient(object):
 
 
 class CloudClient(object):
-    token_body = {
-        "auth": {
-            "identity": {
-                "methods": [
-                    "password"
-                ],
-                "password": {
-                    "user": {
-                        "domain": {
-                            "name": CONF.keystone_authtoken.user
-                        },
-                        "name": CONF.keystone_authtoken.user,
-                        "password": CONF.keystone_authtoken.password
-                    }
-                }
-            },
-            "scope": {
-                "project": {
-                    "name": CONF.keystone_authtoken.project_name,
-                    "domain": {
-                        "name": "Default"
-                    }
-                }
-            }
-        }
-    }
-
-    def __init__(self):
+    def __init__(self, region_name='cn-north-1'):
         self.auth_token = None
         self.catalog = dict()
         self.keystone_url = None
+        self.region = region_name
         self._init_keystone()
+        self.endpoints = {}
 
     def init_admin_token(self):
         headers = {"Accept": "application/json"}
         issue_token_url = "%s/auth/tokens" % self.keystone_url
+
+        token_body = {
+            "auth": {
+                "identity": {
+                    "methods": [
+                        "password"
+                    ],
+                    "password": {
+                        "user": {
+                            "domain": {
+                                "name": CONF.keystone_authtoken.user
+                            },
+                            "name": CONF.keystone_authtoken.user,
+                            "password": CONF.keystone_authtoken.password
+                        }
+                    }
+                },
+                "scope": {
+                    "project": {
+                        "name": self.region
+                    }
+                }
+            }
+        }
+
         resp_headers, resp_body = HTTPClient.do_post(issue_token_url,
                                                      headers,
-                                                     self.token_body)
+                                                     token_body)
+
         self.auth_token = resp_headers.get('X-Subject-Token')
         self.catalog = resp_body.get('token').get('catalog')
+        # print(self.catalog)
 
     def _init_keystone(self):
         auth_url = "%s://%s:%s/%s" % (
@@ -121,20 +122,18 @@ class CloudClient(object):
             if cat.get('name') == service_name and cat.get('type') == service_type:
                 for endpoint in cat.get("endpoints"):
                     if endpoint.get('interface') == endpoint_type and endpoint.get('region') == region_name:
-
                         return endpoint.get('url')
 
     def get_all_regions(self):
-        url = "https://iam.myhuaweicloud.com:443/v3/services"
+        url = "https://iam.myhuaweicloud.com:443/v3/regions"
         headers = {
             'X-Auth-Token': self.auth_token,
             "Accept": "application/json",
             "X-OpenStack-Nova-API-Version": "2.26"
         }
         resp_headers, resp_body = HTTPClient.do_get(url, headers=headers)
-        print("all_region:" , resp_body)
+        print("all_region:", resp_body)
         return resp_body
-
 
     @staticmethod
     def get_global_region_name():
@@ -172,10 +171,10 @@ class CloudClient(object):
                                                     )
         return resp_body
 
-    def list_servers(self, region_name,
-                     detailed=True, search_opts=None,
-                     marker=None, limit=None,
-                     sort_keys=None, sort_dirs=None):
+    def get_servers(self, region_name,
+                    detailed=True, search_opts=None,
+                    marker=None, limit=None,
+                    sort_keys=None, sort_dirs=None):
         headers = {
             'X-Auth-Token': self.auth_token,
             "Accept": "application/json",
@@ -225,6 +224,52 @@ class CloudClient(object):
             marker = result[-1].id
         return result
 
+    def get_public_ips(self, region_name, search_opts=None,
+                       marker=None, limit=None, sort_keys=None, sort_dirs=None):
+        headers = {
+            'X-Auth-Token': self.auth_token,
+            "Accept": "application/json",
+            "X-OpenStack-Nova-API-Version": "2.26"
+        }
+        vpc_url = self.get_endpoint('public', 'vpc', 'vpc', region_name)
+        if search_opts is None:
+            search_opts = {}
+
+        qparams = {}
+
+        for opt, val in six.iteritems(search_opts):
+            if val:
+                if isinstance(val, six.text_type):
+                    val = val.encode('utf-8')
+                qparams[opt] = val
+
+        result = []
+        while True:
+            if marker:
+                qparams['marker'] = marker
+            if limit and limit != -1:
+                qparams['limit'] = limit
+            if qparams or sort_keys or sort_dirs:
+                items = list(qparams.items())
+                if sort_keys:
+                    items.extend(('sort_key', sort_key) for sort_key in sort_keys)
+                if sort_dirs:
+                    items.extend(('sort_dir', sort_dir) for sort_dir in sort_dirs)
+                new_qparams = sorted(items, key=lambda x: x[0])
+                query_string = "?%s" % parse.urlencode(new_qparams)
+            else:
+                query_string = ""
+
+            _, resp_body = HTTPClient.do_get("%s/publicips%s" %
+                                             (vpc_url, query_string),
+                                             headers)
+            public_ips = resp_body.get("publicips")
+            result.extend(public_ips)
+
+            if not public_ips or limit != -1:
+                break
+            marker = result[-1].id
+        return result
 
     def delete_server(self, region_name, server_id):
         headers = {
@@ -253,7 +298,7 @@ class CloudClient(object):
             return None
         return resp_body
 
-    def list_bandwith(self, region_name, search_opts=None,
+    def get_bandwidths(self, region_name, search_opts=None,
                      marker=None, limit=None,
                      sort_keys=None, sort_dirs=None):
         headers = {
@@ -273,10 +318,6 @@ class CloudClient(object):
                     val = val.encode('utf-8')
                 qparams[opt] = val
 
-        detail = ""
-        #if detailed:
-        #    detail = "/detail"
-
         result = []
         while True:
             if marker:
@@ -294,8 +335,8 @@ class CloudClient(object):
             else:
                 query_string = ""
 
-            _, resp_body = HTTPClient.do_get("%s/bandwidths%s%s" %
-                                             (vpc_url, detail, query_string),
+            _, resp_body = HTTPClient.do_get("%s/bandwidths%s" %
+                                             (vpc_url, query_string),
                                              headers)
             bandwidths = resp_body.get("bandwidths")
             result.extend(bandwidths)
@@ -311,105 +352,99 @@ class CloudClient(object):
             "Accept": "application/json",
             "X-OpenStack-Nova-API-Version": "2.26"
         }
-        endpoint = self.get_endpoint('public', 'vpcv2.0', 'vpcv2.0', region_name)
-
-        url = "%s/publicips/%s" %(endpoint, ip_id)
-        print url
-        #resp = HTTPClient.do_delete(url, headers)
-
-        #return resp
+        endpoint = self.get_endpoint('public', 'vpc', 'vpc', region_name)
+        url = "%s/publicips/%s" % (endpoint, ip_id)
+        resp = HTTPClient.do_delete(url, headers)
+        return resp
 
 
-class CloudMonitor(object):
-
-    def __init__(self):
-        self.client = CloudClient()
-        self.users = {'m00405515':'mafuda',
-                      'z00364752':'zhangyi',
-                      'z00297223':'zhangjianbin',
-                      'z00417897':'zhutun',
-                      'l00213780':'lijuan',
-                      't00357535':'tianxinghui',
-                      'z00393177':'zhangjihai',
-                      'wwx493768':'wanglijuan',
-                      'z00205886':'zhuziguang',
-                      'l00349281':'l00349281'}
-
+class CloudMonitor(CloudClient):
+    def __init__(self, region_name):
+        self.auth_users = {'m00405515': 'mafuda',
+                          'z00364752': 'zhangyi',
+                          'z00297223': 'zhangjianbin',
+                          'z00417897': 'zhutun',
+                          'l00213780': 'lijuan',
+                          't00357535': 'tianxinghui',
+                          'z00393177': 'zhangjihai',
+                          'wwx493768': 'wanglijuan',
+                          'z00205886': 'zhuziguang',
+                          'l00349281': 'l00349281'}
+        super(CloudMonitor, self).__init__(region_name)
 
     def _auth_users(self, server_name):
-        return any(self.users.has_key(item) for item in server_name.lower().split("-"))
+        return any(item in self.auth_users.keys() for item in server_name.lower().split("-"))
 
+    def servers_monitoring(self):
+        servers = self.get_servers(self.region, detailed=True)
 
-    def servers_monitor(self, region_name):
-        #self.client.get_all_regions()
-        servers =  self.client.list_servers(region_name, detailed=True)
+        # delete unnamed instances
         for server in servers:
-            # print server.get('name')
             if not self._auth_users(server.get('name')): 
-                print("%s: server: %s is invailed and has been deleted" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), server.get('name')))
-                res = self.client.delete_server(region_name, server.get('id'))
-                pass
+                print("%s: %s：invalid server is deleted: %s, %s"
+                      % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         self.region, server.get('name'), server.get('flavor').get('id')))
+                # res = self.client.delete_server(self.region, server.get('id'))
 
-    def bandwidths_monitor(self, region_name):
-        bandwidths = self.client.list_bandwith(region_name)
+        # delete P1 instances at night
+        if datetime.now().hour == 0:
+            # print("%s, T" % datetime.now().hour)
+            for server in servers:
+                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
+                    print("%s: %s：invalid server is deleted: %s, %s"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    #self.delete_server(self.region, server.get('id'))
+
+    def network_monitoring(self):
+        public_ips = self.get_public_ips(self.region)
+
+        # delete public ips un-bonded to servers
+        for public_ip in public_ips:
+            if public_ip.get('status') == 'DOWN':
+                print("%s: %s：unused float ip is deleted: %s"
+                      % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         self.region, public_ip.get('id')))
+                self.delete_ip(self.region, public_ip.get('id'))
+
+        # delete public ips charged by bandwidth
+        bandwidths = self.get_bandwidths(self.region)
         for bandwidth in bandwidths:
-            #print(bandwidth.get('charge_mode'))
-            if bandwidth.get('charge_mode') == 'bandwidth':
-                #print(bandwidth.get('publicip_info')[0].get('publicip_id'))
+            if bandwidth.get('charge_mode') != 'traffic':
                 publicips = bandwidth.get('publicip_info')
                 for publicip in publicips:
-                    print publicip.get('publicip_id')
-                    #self.client.delete_ip(region_name, publicip.get('publicip_id'))
+                    print("%s: %s：non-traffic float ip is deleted: %s"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, publicip.get('publicip_id')))
+                    self.delete_ip(self.region, publicip.get('publicip_id'))
 
-
-    def volumes_monitor(self, region_name):
+    def volumes_monitoring(self, region_name):
         pass
 
-    def cost_monitor(self, region_name):
+    def cost_monitoring(self, region_name):
         pass
 
+    def run(self):
+        self.servers_monitoring()
+        self.network_monitoring()
 
-#if __name__ == '__main__':
-def monitor_job(): 
-    c = CloudMonitor()
-   # regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
-    regions = ['cn-north-1']
+
+# if __name__ == '__main__':
+def monitor_job():
+    regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
     for region in regions:
-        print "region:", region
-        c.servers_monitor(region)
-        #c.bandwidths_monitor(region)
-        #c.volumes_monitor(region)
-
-    #print(c.auth_token)
+        monitor = CloudMonitor(region)
+        monitor.run()
 
 
 def job():
     print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
-print("%s Start moinitoring..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-sched = BlockingScheduler()
-sched.add_job(monitor_job, 'interval', seconds=120)
-sched.start()
-
-
-
-    # pods = c.get_nova_pods()
-    # print(pods)
-    # print(c.get_nova_availability_zone())
-    # # print c.get_aggregates(pods[0])
-    # for p in pods:
-    #     print("=" * 100 + " " * 20 + p)
-    #     print(c.get_aggregates(p))
-    # bandwidths = c.list_bandwith('cn-north-1')
-    # for bandwidth in bandwidths:
-    #     #print(bandwidth.get('charge_mode'))
-    #     if bandwidth.get('charge_mode') == 'bandwidth':
-    #         print(bandwidth)
-    #         pass
-            #Delete_ip_bandwidth()
-
-        #print(c.get_flavor("g3.4xlarge.4"))
-    #print(c.get_endpoint('public', 'neutron', 'network', c.get_global_region_name()))
+if __name__ == '__main__':
+    print("%s Start monitoring ..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    scheduler = BlockingScheduler()
+    scheduler.add_job(monitor_job, 'interval', seconds=180)
+    scheduler.start()
 
 
