@@ -376,6 +376,25 @@ class CloudMonitor(CloudClient):
         return any(item in self.auth_users.keys() for item in server_name.lower().split("-"))
 
     def servers_monitoring(self):
+        
+        def _delete_high_cost_servers(servers):
+            # print("%s, T" % datetime.now().hour)
+            for server in servers:
+                if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarege.8"]:
+                    print("%s: %s：invalid server is deleted: %s, %s"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    #self.delete_server(self.region, server.get('id'))
+                        
+        def _shutdown_high_cost_servers(servers):
+            # print("%s, T" % datetime.now().hour)
+            for server in servers:
+                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
+                    print("%s: %s：invalid server is deleted: %s, %s"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    #self.delete_server(self.region, server.get('id'))
+        
         servers = self.get_servers(self.region, detailed=True)
 
         # delete unnamed instances
@@ -385,16 +404,14 @@ class CloudMonitor(CloudClient):
                       % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          self.region, server.get('name'), server.get('flavor').get('id')))
                 # res = self.client.delete_server(self.region, server.get('id'))
-
-        # delete P1 instances at night
-        if datetime.now().hour == 0:
-            # print("%s, T" % datetime.now().hour)
-            for server in servers:
-                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
-                    print("%s: %s：invalid server is deleted: %s, %s"
-                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             self.region, server.get('name'), server.get('flavor').get('id')))
-                    #self.delete_server(self.region, server.get('id'))
+                
+        
+        if datetime.now().hour == 0: 
+            # delete P1 instances at night
+            _delete_high_cost_servers(servers)
+            # shutdown high-cost instances at night
+            _shutdown_high_cost_servers(servers)
+            
 
     def network_monitoring(self):
         public_ips = self.get_public_ips(self.region)
