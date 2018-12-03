@@ -425,7 +425,7 @@ class CloudMonitor(CloudClient):
             # print("%s, T" % datetime.now().hour)
             for server in servers:
                 if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarge.8"]:
-                    print("%s: %s: server is deleted: %s, %s, reason: hight-cost"
+                    print("%s: %s: server is deleted: %s, %s, reason: high cost"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
                     self.delete_server(self.region, server.get('id'))
@@ -434,12 +434,11 @@ class CloudMonitor(CloudClient):
             # print("%s, T" % datetime.now().hour)
             pass
        
-        if datetime.now().hour == 0:
-            servers = self.get_servers(self.region, detailed=True)
-            # delete P1 instances at night
-            _delete_high_cost_servers(servers)
-            # shutdown high-cost instances at night
-            _shutdown_high_cost_servers(servers)
+        servers = self.get_servers(self.region, detailed=True)
+        # delete P1 instances at night
+        _delete_high_cost_servers(servers)
+        # shutdown high-cost instances at night
+        _shutdown_high_cost_servers(servers)
 
     def run(self):
         self.servers_monitoring()
