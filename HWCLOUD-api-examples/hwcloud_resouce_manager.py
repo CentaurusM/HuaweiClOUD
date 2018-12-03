@@ -390,7 +390,7 @@ class CloudMonitor(CloudClient):
                 print("%s: %s: server is deleted: %s, %s, reason: unauthenrized ecs name "
                       % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          self.region, server.get('name'), server.get('flavor').get('id')))
-                # res = self.client.delete_server(self.region, server.get('id'))
+                self.delete_server(self.region, server.get('id'))
                 
     def network_monitoring(self):
         public_ips = self.get_public_ips(self.region)
@@ -428,16 +428,11 @@ class CloudMonitor(CloudClient):
                     print("%s: %s: server is deleted: %s, %s, reason: hight-cost"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
-                    #self.delete_server(self.region, server.get('id'))
+                    self.delete_server(self.region, server.get('id'))
                         
         def _shutdown_high_cost_servers(servers):
             # print("%s, T" % datetime.now().hour)
-            for server in servers:
-                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
-                    print("%s: %s: server is shutdown: %s, %s, reason: night"
-                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             self.region, server.get('name'), server.get('flavor').get('id')))
-                    #self.delete_server(self.region, server.get('id'))
+            pass
        
         if datetime.now().hour == 0:
             servers = self.get_servers(self.region, detailed=True)
