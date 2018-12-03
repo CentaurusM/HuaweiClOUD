@@ -367,52 +367,31 @@ class CloudMonitor(CloudClient):
                           'l00213780': 'lijuan',
                           't00357535': 'tianxinghui',
                           'z00393177': 'zhangjihai',
-                          'wwx493768': 'wanglijuan',
                           'z00205886': 'zhuziguang',
-                          'l00349281': 'l00349281'}
+                          'l00349281': 'luosibiao', 
+                          'x00454388': 'xiaojie',
+                          'm00428972': 'mayouling',
+                          'w00425488': 'wangjunjie',
+                          'x00389066': 'xunchen',
+                          'c00427478': 'Chenqiuran',
+                          'l00454785': 'longchangchun',
+                          'w00284897': 'wangkunming'
+                          }
         super(CloudMonitor, self).__init__(region_name)
 
     def _auth_users(self, server_name):
         return any(item in self.auth_users.keys() for item in server_name.lower().split("-"))
 
-    def servers_monitoring(self):
-        
-        def _delete_high_cost_servers(servers):
-            # print("%s, T" % datetime.now().hour)
-            for server in servers:
-                if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarege.8"]:
-                    print("%s: %s：invalid server is deleted: %s, %s"
-                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             self.region, server.get('name'), server.get('flavor').get('id')))
-                    #self.delete_server(self.region, server.get('id'))
-                        
-        def _shutdown_high_cost_servers(servers):
-            # print("%s, T" % datetime.now().hour)
-            for server in servers:
-                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
-                    print("%s: %s：invalid server is deleted: %s, %s"
-                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             self.region, server.get('name'), server.get('flavor').get('id')))
-                    #self.delete_server(self.region, server.get('id'))
-        
+    def servers_monitoring(self):      
         servers = self.get_servers(self.region, detailed=True)
-
         # delete unnamed instances
         for server in servers:
             if not self._auth_users(server.get('name')): 
-                print("%s: %s：invalid server is deleted: %s, %s"
+                print("%s: %s：server is deleted: %s, %s, reason: unauthenrized ecs name "
                       % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          self.region, server.get('name'), server.get('flavor').get('id')))
                 # res = self.client.delete_server(self.region, server.get('id'))
                 
-        
-        if datetime.now().hour == 0: 
-            # delete P1 instances at night
-            _delete_high_cost_servers(servers)
-            # shutdown high-cost instances at night
-            _shutdown_high_cost_servers(servers)
-            
-
     def network_monitoring(self):
         public_ips = self.get_public_ips(self.region)
 
@@ -440,19 +419,54 @@ class CloudMonitor(CloudClient):
 
     def cost_monitoring(self, region_name):
         pass
+    
+    def night_resource_checking_job(self):               
+        def _delete_high_cost_servers(servers):
+            # print("%s, T" % datetime.now().hour)
+            for server in servers:
+                if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarge.8"]:
+                    print("%s: %s：server is deleted: %s, %s, reason: hight-cost"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    #self.delete_server(self.region, server.get('id'))
+                        
+        def _shutdown_high_cost_servers(servers):
+            # print("%s, T" % datetime.now().hour)
+            for server in servers:
+                if server.get('flavor').get('id').split(".")[0] in ["p1"]:
+                    print("%s: %s：server is shutdown: %s, %s, reason: night"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    #self.delete_server(self.region, server.get('id'))
+       
+        if datetime.now().hour == 0:
+            servers = self.get_servers(self.region, detailed=True)
+            # delete P1 instances at night
+            _delete_high_cost_servers(servers)
+            # shutdown high-cost instances at night
+            _shutdown_high_cost_servers(servers)
 
     def run(self):
         self.servers_monitoring()
         self.network_monitoring()
 
+        
 
 # if __name__ == '__main__':
-def monitor_job():
+def normal_monitoring_job():
     regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
     for region in regions:
         monitor = CloudMonitor(region)
-        monitor.run()
-
+        monitor.servers_monitoring()
+        monitor.network_monitoring()
+        
+        
+def night_checking_job():
+    regions = ['cn-north-1', 'cn-south-1', 'cn-east-2']
+    for region in regions:
+        monitor = CloudMonitor(region)
+        monitor.night_resource_checking_job()
+        
 
 def job():
     print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -461,7 +475,8 @@ def job():
 if __name__ == '__main__':
     print("%s Start monitoring ..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     scheduler = BlockingScheduler()
-    scheduler.add_job(monitor_job, 'interval', seconds=180)
+    scheduler.add_job(normal_monitoring_job, 'interval', seconds=180)
+    scheduler.add_job(night_checking_job, 'cron', hour='0-8', minute = '10')
     scheduler.start()
 
 
