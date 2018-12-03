@@ -387,7 +387,7 @@ class CloudMonitor(CloudClient):
         # delete unnamed instances
         for server in servers:
             if not self._auth_users(server.get('name')): 
-                print("%s: %s：server is deleted: %s, %s, reason: unauthenrized ecs name "
+                print("%s: %s: server is deleted: %s, %s, reason: unauthenrized ecs name "
                       % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          self.region, server.get('name'), server.get('flavor').get('id')))
                 # res = self.client.delete_server(self.region, server.get('id'))
@@ -398,7 +398,7 @@ class CloudMonitor(CloudClient):
         # delete public ips un-bonded to servers
         for public_ip in public_ips:
             if public_ip.get('status') == 'DOWN':
-                print("%s: %s：unused float ip is deleted: %s"
+                print("%s: %s: unused float ip is deleted: %s"
                       % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          self.region, public_ip.get('id')))
                 self.delete_ip(self.region, public_ip.get('id'))
@@ -409,7 +409,7 @@ class CloudMonitor(CloudClient):
             if bandwidth.get('charge_mode') != 'traffic':
                 publicips = bandwidth.get('publicip_info')
                 for publicip in publicips:
-                    print("%s: %s：non-traffic float ip is deleted: %s"
+                    print("%s: %s: non-traffic float ip is deleted: %s"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, publicip.get('publicip_id')))
                     self.delete_ip(self.region, publicip.get('publicip_id'))
@@ -425,7 +425,7 @@ class CloudMonitor(CloudClient):
             # print("%s, T" % datetime.now().hour)
             for server in servers:
                 if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarge.8"]:
-                    print("%s: %s：server is deleted: %s, %s, reason: hight-cost"
+                    print("%s: %s: server is deleted: %s, %s, reason: hight-cost"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
                     #self.delete_server(self.region, server.get('id'))
@@ -434,7 +434,7 @@ class CloudMonitor(CloudClient):
             # print("%s, T" % datetime.now().hour)
             for server in servers:
                 if server.get('flavor').get('id').split(".")[0] in ["p1"]:
-                    print("%s: %s：server is shutdown: %s, %s, reason: night"
+                    print("%s: %s: server is shutdown: %s, %s, reason: night"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
                     #self.delete_server(self.region, server.get('id'))
