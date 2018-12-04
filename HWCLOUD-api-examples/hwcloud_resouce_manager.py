@@ -470,7 +470,7 @@ if __name__ == '__main__':
     print("%s Start monitoring ..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     scheduler = BlockingScheduler()
     scheduler.add_job(normal_monitoring_job, 'interval', seconds=180)
-    scheduler.add_job(night_checking_job, 'cron', hour='0-8', minute = '10')
+    scheduler.add_job(night_checking_job, 'cron', hour='0-8', minute='10')
     scheduler.start()
 
     
