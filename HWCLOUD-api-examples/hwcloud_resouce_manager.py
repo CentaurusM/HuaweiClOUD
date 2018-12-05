@@ -49,6 +49,10 @@ class HTTPClient(object):
         headers.update(HTTPClient.general_headers)
         resp = requests.post(url, headers=headers, data=json.dumps(body), proxies=HTTPClient.proxies, verify=False)
         resp_headers = resp.headers
+        if resp.text == "":
+            resp_body = {}
+        else:
+            resp_body = json.loads(resp.text)
         resp_body = json.loads(resp.text)
         return resp_headers, resp_body
 
@@ -285,7 +289,22 @@ class CloudClient(object):
                                              headers)
 
         return resp
+    
+    def stop_server(self, region_name, server_id):
+        headers = {
+            'X-Auth-Token': self.auth_token,
+            "Accept": "application/json",
+            "X-OpenStack-Nova-API-Version": "2.26"
+        }
+        nova_url = self.get_endpoint('public', 'nova', 'compute', region_name)
+        body = {
+            'os-stop': {}
+        }
+        url = "%s/servers/%s/action" % (nova_url, server_id)
+        resp = HTTPClient.do_post(url, headers, body)
+        return resp
 
+    
     def get_flavor(self, flavor_name):
         nova_url = self.get_endpoint('public', 'nova', 'compute', self.get_global_region_name())
         get_flavor_extra = "%s/flavors/%s/os-extra_specs" % (nova_url, flavor_name)
@@ -424,7 +443,8 @@ class CloudMonitor(CloudClient):
         def _delete_high_cost_servers(servers):
             # print("%s, T" % datetime.now().hour)
             for server in servers:
-                if server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarge.8"]:
+                if 'nonstop' not in server.get('name').lower().split("-") and \
+                        server.get('flavor').get('id') in ["p1.2xlarge.8", "p1.4xlarge.8, p1.8xlarge.8"]:
                     print("%s: %s: server is deleted: %s, %s, reason: high cost"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
@@ -432,7 +452,12 @@ class CloudMonitor(CloudClient):
                         
         def _shutdown_high_cost_servers(servers):
             # print("%s, T" % datetime.now().hour)
-            pass
+            for server in servers:
+                if 'nonstop' not in server.get('name').lower().split("-") and server.get('status') == 'ACTIVE':
+                    print("%s: %s: stop server %s, %s, reason: night cleaning"
+                          % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             self.region, server.get('name'), server.get('flavor').get('id')))
+                    self.stop_server(self.region, server.get('id'))
        
         servers = self.get_servers(self.region, detailed=True)
         # delete P1 instances at night
