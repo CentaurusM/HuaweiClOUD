@@ -453,7 +453,9 @@ class CloudMonitor(CloudClient):
         def _shutdown_high_cost_servers(servers):
             # print("%s, T" % datetime.now().hour)
             for server in servers:
-                if 'nonstop' not in server.get('name').lower().split("-") and server.get('status') == 'ACTIVE':
+                if 'nonstop' not in server.get('name').lower().split("-") \
+                        and server.get('status') == 'ACTIVE' \
+                        and "dev" not in server.get('flavor').get('id').split("."):
                     print("%s: %s: stop server %s, %s, reason: night cleaning"
                           % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                              self.region, server.get('name'), server.get('flavor').get('id')))
