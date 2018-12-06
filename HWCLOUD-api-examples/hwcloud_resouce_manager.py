@@ -1,6 +1,7 @@
 import json
 import requests
 import six
+import pytz
 
 from oslo_config import cfg
 from six.moves.urllib import parse
@@ -27,6 +28,8 @@ CONF = cfg.CONF
 auth_config = 'auth.conf'
 CONF.register_opts(keystone_authtoken_opts, group="keystone_authtoken")
 CONF(args='', default_config_files=[auth_config])
+
+timez = pytz.timezone('Asia/Shanghai')
 
 
 class HTTPClient(object):
@@ -495,7 +498,7 @@ def job():
 
 if __name__ == '__main__':
     print("%s Start monitoring ..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    scheduler = BlockingScheduler()
+    scheduler = BlockingScheduler(timezone=timez)
     scheduler.add_job(normal_monitoring_job, 'interval', seconds=180)
     scheduler.add_job(night_checking_job, 'cron', hour='0-8', minute='10')
     scheduler.start()
