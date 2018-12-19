@@ -64,7 +64,6 @@ class HTTPClient(object):
             resp_body = {}
         else:
             resp_body = json.loads(resp.text)
-        resp_body = json.loads(resp.text)
         return resp_headers, resp_body
 
     @staticmethod
