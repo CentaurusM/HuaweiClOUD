@@ -2,6 +2,8 @@
 import json
 import requests
 import six
+import re
+import time
 
 import pytz
 import logging
@@ -38,6 +40,9 @@ CONF = cfg.CONF
 auth_config = 'auth.conf'
 CONF.register_opts(keystone_authtoken_opts, group="keystone_authtoken")
 CONF(args='', default_config_files=[auth_config])
+
+
+cached_data = {}
 
 
 class HTTPClient(object):
@@ -83,6 +88,12 @@ class CloudClient(object):
         self.endpoints = {}
 
     def init_admin_token(self):
+        if cached_data.get("%s_expired_time" % self.region, 0) > time.time():
+            self.auth_token = cached_data.get("%s_token" % self.region)
+            self.catalog = cached_data.get("%s_catalog" % self.region)
+            return
+
+
         headers = {"Accept": "application/json"}
         issue_token_url = "%s/auth/tokens" % self.keystone_url
 
@@ -117,6 +128,11 @@ class CloudClient(object):
         self.auth_token = resp_headers.get('X-Subject-Token')
         self.catalog = resp_body.get('token').get('catalog')
         # print(self.catalog)
+        # update cache
+        cached_data["%s_token" % self.region] = self.auth_token
+        cached_data["%s_expired_time" % self.region] = time.time() + 36000 ## 10 hour
+        cached_data["%s_catalog" % self.region] = self.catalog
+
 
     def _init_keystone(self):
         auth_url = "%s://%s:%s/%s" % (
@@ -408,7 +424,8 @@ class CloudMonitor(CloudClient):
                           'c00427478': 'Chenqiuran',
                           'l00454785': 'longchangchun',
                           'w00284897': 'wangkunming',
-                          'z00450106': 'zhangxinying'
+                          'z00450106': 'zhangxinying',
+                          'l00456141': 'luole'
                           }
         super(CloudMonitor, self).__init__(region_name)
 
@@ -510,7 +527,7 @@ def job():
 if __name__ == '__main__':
     print("%s Start monitoring ..." % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     scheduler = BlockingScheduler(timezone=pytz.timezone('Asia/Shanghai'))
-    scheduler.add_job(normal_monitoring_job, 'interval', seconds=180)
+    scheduler.add_job(normal_monitoring_job, 'interval', seconds=300, next_run_time=datetime.now())
     scheduler.add_job(night_checking_job, 'cron', hour='0-8', minute='10')
     scheduler.start()
 
