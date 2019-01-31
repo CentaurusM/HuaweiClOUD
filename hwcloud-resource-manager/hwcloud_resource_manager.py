@@ -408,24 +408,13 @@ class CloudClient(object):
 
 class CloudMonitor(CloudClient):
     def __init__(self, region_name):
-        self.auth_users = {'m00405515': 'mafuda',
-                          'z00364752': 'zhangyi',
-                          'z00297223': 'zhangjianbin',
-                          'z00417897': 'zhutun',
-                          'l00213780': 'lijuan',
-                          't00357535': 'tianxinghui',
-                          'z00393177': 'zhangjihai',
-                          'z00205886': 'zhuziguang',
-                          'l00349281': 'luosibiao', 
-                          'x00454388': 'xiaojie',
-                          'm00428972': 'mayouling',
-                          'w00425488': 'wangjunjie',
-                          'x00389066': 'xunchen',
-                          'c00427478': 'Chenqiuran',
-                          'l00454785': 'longchangchun',
-                          'w00284897': 'wangkunming',
-                          'z00450106': 'zhangxinying',
-                          'l00456141': 'luole'
+        self.auth_users = {'z00900001': 'zhangsan',
+                          'l00947521': 'lisi',
+                          'w00707223': 'wangermazi',
+                          'w00817897': 'weixiaobao',
+                          'c00913780': 'chenjinnan',
+                          'k00957535': 'kangxi',
+                          'w00993177': 'wusangui'
                           }
         super(CloudMonitor, self).__init__(region_name)
 
